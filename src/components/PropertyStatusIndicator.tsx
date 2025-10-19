@@ -28,18 +28,15 @@ export function PropertyStatusIndicator() {
         
         console.log('[PropertyStatusIndicator] Properties count:', count);
       } else {
-        console.log('[PropertyStatusIndicator] API not available, using fallback count');
-        
-        // Fallback: Show demo count when API is not available
-        setPropertyCount(3); // Mock count
-        setStatus('success');
+        const errorText = await response.text();
+        console.error('[PropertyStatusIndicator] Failed to fetch properties:', response.status, errorText);
+        setPropertyCount(0);
+        setStatus('empty');
       }
     } catch (error) {
       console.error('[PropertyStatusIndicator] Exception:', error);
-      
-      // Even if there's an error, show demo count
-      setPropertyCount(3);
-      setStatus('success');
+      setPropertyCount(0);
+      setStatus('empty');
     }
   };
 

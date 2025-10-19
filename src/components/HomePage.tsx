@@ -43,82 +43,47 @@ export function HomePage({ searchQuery, onNavigate }: HomePageProps) {
   const fetchProperties = async () => {
     setLoading(true);
     try {
-      // Try the main properties endpoint first
+      // First try to get properties from localStorage
+      const localProperties = JSON.parse(localStorage.getItem('properties') || '[]');
+      
+      if (localProperties.length > 0) {
+        console.log('[HomePage] Found properties in localStorage:', localProperties.length);
+        setProperties(localProperties);
+        setLoading(false);
+        return;
+      }
+
+      // If no local properties, try API
       let url = `https://${projectId}.supabase.co/functions/v1/make-server-d4068603/properties`;
       if (searchQuery) {
         url += `&location=${searchQuery}`;
       }
 
       console.log('[HomePage] Fetching properties from:', url);
+      console.log('[HomePage] Access token available:', !!accessToken);
       
-      const response = await fetch(url);
+      const headers: any = {};
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
+      const response = await fetch(url, { headers });
 
       console.log('[HomePage] Response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
         console.log('[HomePage] Received properties:', data.properties?.length || 0);
+        console.log('[HomePage] Raw response data:', data);
         setProperties(data.properties || []);
       } else {
-        console.log('[HomePage] API not available, using fallback data');
-        
-        // Fallback: Use mock data when API is not available
-        const mockProperties = [
-          {
-            id: '1',
-            title: 'Modern Apartment in Kigali',
-            description: 'Beautiful 3-bedroom apartment with modern amenities',
-            price: 250000,
-            location: 'Kigali, Rwanda',
-            type: 'apartment',
-            bedrooms: 3,
-            bathrooms: 2,
-            images: ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500'],
-            status: 'approved',
-            ownerId: 'demo-owner',
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: '2',
-            title: 'Luxury Villa in Kigali',
-            description: 'Spacious 4-bedroom villa with garden and parking',
-            price: 450000,
-            location: 'Kigali, Rwanda',
-            type: 'house',
-            bedrooms: 4,
-            bathrooms: 3,
-            images: ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=500'],
-            status: 'approved',
-            ownerId: 'demo-owner',
-            createdAt: new Date().toISOString()
-          }
-        ];
-        
-        setProperties(mockProperties);
-        console.log('[HomePage] Using fallback data with', mockProperties.length, 'properties');
+        const errorText = await response.text();
+        console.error('[HomePage] Failed to fetch properties:', response.status, errorText);
+        setProperties([]);
       }
     } catch (error) {
       console.error('[HomePage] Exception while fetching properties:', error);
-      
-      // Even if there's an error, show some demo data
-      const mockProperties = [
-        {
-          id: 'demo-1',
-          title: 'Demo Property',
-          description: 'This is a demo property to show the system is working',
-          price: 200000,
-          location: 'Kigali, Rwanda',
-          type: 'apartment',
-          bedrooms: 2,
-          bathrooms: 1,
-          images: ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500'],
-          status: 'approved',
-          ownerId: 'demo-owner',
-          createdAt: new Date().toISOString()
-        }
-      ];
-      
-      setProperties(mockProperties);
+      setProperties([]);
     } finally {
       setLoading(false);
     }

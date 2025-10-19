@@ -98,8 +98,8 @@ export function PropertyCard({ property, onViewDetails, isFavorite, onFavoriteTo
       {/* Image */}
       <div className="relative h-48 overflow-hidden">
         <ImageWithFallback
-          src={property.images[0] || 'https://images.unsplash.com/photo-5129174808009991f1c4c750'}
-          alt={property.title}
+          src={property.images?.[0] || 'https://images.unsplash.com/photo-5129174808009991f1c4c750'}
+          alt={property.title || 'Property'}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
         />
         
@@ -141,7 +141,7 @@ export function PropertyCard({ property, onViewDetails, isFavorite, onFavoriteTo
         {/* Type Badge */}
         <div className="absolute bottom-3 left-3">
           <Badge className="bg-emerald-600 text-white capitalize">
-            {t(property.type as any)}
+            {t(property.type as any) || 'Property'}
           </Badge>
         </div>
       </div>
@@ -149,16 +149,16 @@ export function PropertyCard({ property, onViewDetails, isFavorite, onFavoriteTo
       {/* Content */}
       <div className="p-5">
         <h3 className="text-slate-900 dark:text-white mb-2 line-clamp-1">
-          {property.title}
+          {property.title || 'Untitled Property'}
         </h3>
 
         <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300 mb-3">
           <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span className="text-sm">{property.location}</span>
+          <span className="text-sm">{property.location || 'Location not specified'}</span>
         </div>
 
         <p className="text-slate-600 dark:text-slate-400 text-sm line-clamp-2 mb-4">
-          {property.description}
+          {property.description || 'No description available'}
         </p>
 
         {/* Property Details */}
@@ -187,7 +187,7 @@ export function PropertyCard({ property, onViewDetails, isFavorite, onFavoriteTo
         <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
           <div>
             <span className="text-emerald-600 dark:text-emerald-400">
-              {property.price.toLocaleString()} RWF
+              {property.price ? property.price.toLocaleString() : '0'} RWF
             </span>
           </div>
           <Button

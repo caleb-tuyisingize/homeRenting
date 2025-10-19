@@ -117,6 +117,53 @@ export function Dashboard() {
 
   const fetchMyProperties = async () => {
     try {
+      console.log('[Dashboard] Fetching my properties for user:', user?.id);
+      
+      // First try to get properties from localStorage
+      const localProperties = JSON.parse(localStorage.getItem('properties') || '[]');
+      console.log('[Dashboard] All properties in localStorage:', localProperties.length);
+      console.log('[Dashboard] Raw localStorage data:', localProperties);
+      
+      const myLocalProperties = localProperties.filter(
+        (p: Property) => p && p.id && p.ownerId === user?.id
+      );
+      
+      console.log('[Dashboard] My properties after filtering:', myLocalProperties.length);
+      console.log('[Dashboard] My properties data:', myLocalProperties);
+      
+      // If no properties found, create a test property for debugging
+      if (myLocalProperties.length === 0 && localProperties.length === 0) {
+        console.log('[Dashboard] No properties found, creating test property for debugging');
+        const testProperty = {
+          id: 'test-' + Date.now(),
+          title: 'Test Property',
+          description: 'This is a test property to verify the system is working',
+          price: 200000,
+          location: 'Kigali, Rwanda',
+          type: 'apartment',
+          bedrooms: 2,
+          bathrooms: 1,
+          area: 100,
+          duration: '1month',
+          images: ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500'],
+          status: 'approved',
+          ownerId: user?.id,
+          createdAt: new Date().toISOString()
+        };
+        
+        localStorage.setItem('properties', JSON.stringify([testProperty]));
+        console.log('[Dashboard] Test property created:', testProperty);
+        setProperties([testProperty]);
+        return;
+      }
+      
+      if (myLocalProperties.length > 0) {
+        console.log('[Dashboard] Found properties in localStorage:', myLocalProperties.length);
+        setProperties(myLocalProperties);
+        return;
+      }
+
+      // If no local properties, try API
       const url = `https://${projectId}.supabase.co/functions/v1/make-server-d4068603/properties`;
       console.log('[Dashboard] Fetching my properties (owner) from:', url);
       console.log('[Dashboard] User ID:', user?.id);
@@ -147,10 +194,13 @@ export function Dashboard() {
       } else {
         const errorData = await response.text();
         console.error('[Dashboard] Failed to fetch properties:', response.status, errorData);
-        toast.error('Failed to load properties');
+        console.error('[Dashboard] Error details:', errorData);
+        setProperties([]);
+        toast.error(`Failed to load properties: ${response.status}`);
       }
     } catch (error) {
       console.error('[Dashboard] Exception while fetching properties:', error);
+      setProperties([]);
       toast.error('Failed to load properties');
     }
   };

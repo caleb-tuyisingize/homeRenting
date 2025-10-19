@@ -70,79 +70,13 @@ export function PropertiesPage() {
         console.log('[PropertiesPage] Valid properties after filter:', validProperties.length);
         setProperties(validProperties);
       } else {
-        console.log('[PropertiesPage] API not available, using fallback data');
-        
-        // Fallback: Use mock data when API is not available
-        const mockProperties = [
-          {
-            id: '1',
-            title: 'Modern Apartment in Kigali',
-            description: 'Beautiful 3-bedroom apartment with modern amenities',
-            price: 250000,
-            location: 'Kigali, Rwanda',
-            type: 'apartment',
-            bedrooms: 3,
-            bathrooms: 2,
-            images: ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500'],
-            status: 'approved',
-            ownerId: 'demo-owner',
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: '2',
-            title: 'Luxury Villa in Kigali',
-            description: 'Spacious 4-bedroom villa with garden and parking',
-            price: 450000,
-            location: 'Kigali, Rwanda',
-            type: 'house',
-            bedrooms: 4,
-            bathrooms: 3,
-            images: ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=500'],
-            status: 'approved',
-            ownerId: 'demo-owner',
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: '3',
-            title: 'Cozy Studio in Kigali',
-            description: 'Perfect for young professionals, fully furnished',
-            price: 150000,
-            location: 'Kigali, Rwanda',
-            type: 'studio',
-            bedrooms: 1,
-            bathrooms: 1,
-            images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500'],
-            status: 'approved',
-            ownerId: 'demo-owner',
-            createdAt: new Date().toISOString()
-          }
-        ];
-        
-        setProperties(mockProperties);
-        console.log('[PropertiesPage] Using fallback data with', mockProperties.length, 'properties');
+        const errorText = await response.text();
+        console.error('[PropertiesPage] Failed to fetch properties:', response.status, errorText);
+        setProperties([]);
       }
     } catch (error) {
       console.error('[PropertiesPage] Exception while fetching properties:', error);
-      
-      // Even if there's an error, show some demo data
-      const mockProperties = [
-        {
-          id: 'demo-1',
-          title: 'Demo Property',
-          description: 'This is a demo property to show the system is working',
-          price: 200000,
-          location: 'Kigali, Rwanda',
-          type: 'apartment',
-          bedrooms: 2,
-          bathrooms: 1,
-          images: ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500'],
-          status: 'approved',
-          ownerId: 'demo-owner',
-          createdAt: new Date().toISOString()
-        }
-      ];
-      
-      setProperties(mockProperties);
+      setProperties([]);
     } finally {
       setLoading(false);
     }
