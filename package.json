@@ -57,6 +57,8 @@
       },
       "scripts": {
           "dev": "vite",
-          "build": "vite build"
+          "build": "vite build",
+          "prebuild": "if exist dist rmdir /s /q dist",
+          "preview": "vite preview"
       }
   }
