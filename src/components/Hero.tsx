@@ -3,9 +3,9 @@ import { useLanguage } from '../utils/LanguageContext';
 import { Search, MapPin } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import bgImage1 from 'figma:asset/e1a587ce7ef7c99f69dfeb2aaa665d646a3888bd.png';
-import bgImage2 from 'figma:asset/1db5a46dacbb00b7d2fcf3670dc927141d4e5b24.png';
-import bgImage3 from 'figma:asset/f98f42637a565acfc2ddc8bd14a30549968f5e2d.png';
+import bgImage1 from '../assets/e1a587ce7ef7c99f69dfeb2aaa665d646a3888bd.png';
+import bgImage2 from '../assets/1db5a46dacbb00b7d2fcf3670dc927141d4e5b24.png';
+import bgImage3 from '../assets/f98f42637a565acfc2ddc8bd14a30549968f5e2d.png';
 
 interface HeroProps {
   onSearch: (query: string) => void;

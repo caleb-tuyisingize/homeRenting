@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { PropertyCard } from './PropertyCard';
 import { PropertyDetails } from './PropertyDetails';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface Property {
   id: string;
