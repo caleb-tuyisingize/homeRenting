@@ -44,6 +44,19 @@ export function PropertyDetails({ property, isOpen, onClose, onFavoriteToggle }:
   const [loading, setLoading] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
+  // Update page title when property details are opened
+  useEffect(() => {
+    if (isOpen && property) {
+      const originalTitle = document.title;
+      document.title = `${property.title} - RealEstateConnect`;
+      
+      // Restore original title when component unmounts or closes
+      return () => {
+        document.title = originalTitle;
+      };
+    }
+  }, [isOpen, property]);
+
   useEffect(() => {
     if (isOpen && property) {
       fetchRelatedProperties();

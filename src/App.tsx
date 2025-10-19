@@ -24,6 +24,35 @@ function AppContent() {
     setSearchQuery('');
   };
 
+  // Update page title based on current page
+  React.useEffect(() => {
+    const getPageTitle = () => {
+      const baseTitle = 'RealEstateConnect';
+      
+      switch (currentPage) {
+        case 'home':
+          return `${baseTitle} - Find Your Perfect Home`;
+        case 'properties':
+          return `${baseTitle} - Browse Properties`;
+        case 'dashboard':
+          if (user?.role === 'admin') {
+            return `${baseTitle} - Admin Dashboard`;
+          }
+          return `${baseTitle} - My Dashboard`;
+        case 'login':
+          return `${baseTitle} - Sign In`;
+        case 'signup':
+          return `${baseTitle} - Create Account`;
+        case 'admin-login':
+          return `${baseTitle} - Admin Sign In`;
+        default:
+          return baseTitle;
+      }
+    };
+
+    document.title = getPageTitle();
+  }, [currentPage, user?.role]);
+
   // Redirect admin users to admin dashboard
   React.useEffect(() => {
     if (user?.role === 'admin' && currentPage === 'dashboard') {
