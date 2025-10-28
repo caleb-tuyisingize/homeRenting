@@ -2,7 +2,11 @@ import React from 'react';
 import { useLanguage } from '../utils/LanguageContext';
 import { Building2, Mail, Phone, MapPin } from 'lucide-react';
 
-export function Footer() {
+interface FooterProps {
+  onNavigate?: (page: string) => void;
+}
+
+export function Footer({ onNavigate }: FooterProps) {
   const { t } = useLanguage();
 
   return (
@@ -25,24 +29,36 @@ export function Footer() {
             <h4 className="text-white mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <a href="#" className="hover:text-emerald-400 transition-colors">
+                <button 
+                  onClick={() => onNavigate && onNavigate('home')} 
+                  className="hover:text-emerald-400 transition-colors text-left"
+                >
                   {t('home')}
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="hover:text-emerald-400 transition-colors">
+                <button 
+                  onClick={() => onNavigate && onNavigate('properties')} 
+                  className="hover:text-emerald-400 transition-colors text-left"
+                >
                   {t('properties')}
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="hover:text-emerald-400 transition-colors">
+                <button 
+                  onClick={() => onNavigate && onNavigate('about')} 
+                  className="hover:text-emerald-400 transition-colors text-left"
+                >
                   {t('aboutUs')}
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="hover:text-emerald-400 transition-colors">
+                <button 
+                  onClick={() => onNavigate && onNavigate('contact')} 
+                  className="hover:text-emerald-400 transition-colors text-left"
+                >
                   {t('contactUs')}
-                </a>
+                </button>
               </li>
             </ul>
           </div>

@@ -7,6 +7,8 @@ import { HomePage } from './components/HomePage';
 import { PropertiesPage } from './components/PropertiesPage';
 import { Dashboard } from './components/Dashboard';
 import { AdminDashboard } from './components/AdminDashboard';
+import { ContactPage } from './components/ContactPage';
+import { AboutPage } from './components/AboutPage';
 import { Login } from './components/Login';
 import { Signup } from './components/Signup';
 import { AdminLogin } from './components/AdminLogin';
@@ -45,6 +47,10 @@ function AppContent() {
           return `${baseTitle} - Create Account`;
         case 'admin-login':
           return `${baseTitle} - Admin Sign In`;
+        case 'contact':
+          return `${baseTitle} - Contact Us`;
+        case 'about':
+          return `${baseTitle} - About Us`;
         default:
           return baseTitle;
       }
@@ -70,6 +76,10 @@ function AppContent() {
 
   const showFooter = currentPage !== 'login' && currentPage !== 'signup' && currentPage !== 'admin-login';
   const showNavbar = currentPage !== 'admin-login';
+  
+  const handleNavigationWithPage = (page: string) => {
+    handleNavigation(page);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
@@ -78,6 +88,8 @@ function AppContent() {
       <main className="flex-1">
         {currentPage === 'home' && <HomePage searchQuery={searchQuery} onNavigate={handleNavigation} />}
         {currentPage === 'properties' && <PropertiesPage />}
+        {currentPage === 'contact' && <ContactPage />}
+        {currentPage === 'about' && <AboutPage />}
         {currentPage === 'dashboard' && (
           user?.role === 'admin' ? <AdminDashboard /> : <Dashboard />
         )}
@@ -86,7 +98,7 @@ function AppContent() {
         {currentPage === 'admin-login' && <AdminLogin onNavigate={handleNavigation} />}
       </main>
 
-      {showFooter && <Footer />}
+      {showFooter && <Footer onNavigate={handleNavigationWithPage} />}
       
       <Toaster />
       <DebugWidget />

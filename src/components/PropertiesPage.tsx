@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../utils/LanguageContext';
+import { useAuth } from '../utils/AuthContext';
 import { Search, SlidersHorizontal, Building2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { PropertyCard } from './PropertyCard';
 import { PropertyDetails } from './PropertyDetails';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { toast } from 'sonner';
+import { projectId } from '../utils/supabase/info';
 
 interface Property {
   id: string;
@@ -28,6 +28,7 @@ interface Property {
 
 export function PropertiesPage() {
   const { t } = useLanguage();
+  const { accessToken } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +49,7 @@ export function PropertiesPage() {
     try {
       let url = `https://${projectId}.supabase.co/functions/v1/make-server-d4068603/properties`;
 
-      console.log('[PropertiesPage] Fetching properties from:', url);
+      console.log('[PropertiesPage] Fetching properties from database:', url);
       const headers: any = {};
       if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
@@ -60,23 +61,53 @@ export function PropertiesPage() {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('[PropertiesPage] Received data:', data);
+        console.log('[PropertiesPage] Received data from database:', data);
         console.log('[PropertiesPage] Properties count:', data.properties?.length || 0);
         
         // Filter out null/invalid properties
         const validProperties = (data.properties || []).filter(
           (p: Property) => p && p.id && p.title
         );
-        console.log('[PropertiesPage] Valid properties after filter:', validProperties.length);
-        setProperties(validProperties);
+        
+        if (validProperties.length > 0) {
+          console.log('[PropertiesPage] Valid properties:', validProperties.length);
+          // Store in localStorage as backup
+          localStorage.setItem('properties', JSON.stringify(validProperties));
+          setProperties(validProperties);
+        } else {
+          // Try localStorage as fallback
+          const localProperties = JSON.parse(localStorage.getItem('properties') || '[]');
+          if (localProperties.length > 0) {
+            console.log('[PropertiesPage] Using localStorage fallback');
+            setProperties(localProperties);
+          } else {
+            setProperties([]);
+          }
+        }
       } else {
         const errorText = await response.text();
-        console.error('[PropertiesPage] Failed to fetch properties:', response.status, errorText);
-        setProperties([]);
+        console.error('[PropertiesPage] Failed to fetch from database:', response.status, errorText);
+        
+        // Fallback to localStorage
+        const localProperties = JSON.parse(localStorage.getItem('properties') || '[]');
+        if (localProperties.length > 0) {
+          console.log('[PropertiesPage] Using localStorage fallback');
+          setProperties(localProperties);
+        } else {
+          setProperties([]);
+        }
       }
     } catch (error) {
       console.error('[PropertiesPage] Exception while fetching properties:', error);
-      setProperties([]);
+      
+      // Fallback to localStorage
+      const localProperties = JSON.parse(localStorage.getItem('properties') || '[]');
+      if (localProperties.length > 0) {
+        console.log('[PropertiesPage] Using localStorage fallback');
+        setProperties(localProperties);
+      } else {
+        setProperties([]);
+      }
     } finally {
       setLoading(false);
     }

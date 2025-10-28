@@ -32,6 +32,7 @@ export function PaymentDialog({ property, isOpen, onClose, onSuccess }: PaymentD
   const [loading, setLoading] = useState(false);
   const [bookingType, setBookingType] = useState<'purchase' | 'rent'>('purchase');
   const [paymentMethod, setPaymentMethod] = useState('mobile_money');
+  const [paymentOption, setPaymentOption] = useState<'full' | 'partial'>('full');
   const [contactInfo, setContactInfo] = useState({
     phone: '',
     alternativePhone: '',
@@ -62,7 +63,8 @@ export function PaymentDialog({ property, isOpen, onClose, onSuccess }: PaymentD
             propertyId: property.id,
             bookingType,
             paymentMethod,
-            amount: property.price,
+            paymentOption,
+            amount: paymentOption === 'partial' ? property.price * 0.1 : property.price,
             contactInfo
           }),
         }
@@ -127,6 +129,41 @@ export function PaymentDialog({ property, isOpen, onClose, onSuccess }: PaymentD
                   <div className="flex items-center gap-2">
                     <CreditCard className="w-4 h-4" />
                     <span>Rent this property</span>
+                  </div>
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* Payment Option */}
+          <div>
+            <Label className="mb-3 block">Payment Option:</Label>
+            <RadioGroup value={paymentOption} onValueChange={(value: any) => setPaymentOption(value)}>
+              <div className="flex items-center space-x-2 p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <RadioGroupItem value="full" id="full" />
+                <Label htmlFor="full" className="flex-1 cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <span>Full Payment</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                      {property.price.toLocaleString()} RWF
+                    </span>
+                  </div>
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2 p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <RadioGroupItem value="partial" id="partial" />
+                <Label htmlFor="partial" className="flex-1 cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span>Partial Payment (10% Down)</span>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Pay at least 10% to secure the property
+                      </p>
+                    </div>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                      {(property.price * 0.1).toLocaleString()} RWF
+                    </span>
                   </div>
                 </Label>
               </div>
@@ -222,11 +259,20 @@ export function PaymentDialog({ property, isOpen, onClose, onSuccess }: PaymentD
           {/* Summary */}
           <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-slate-600 dark:text-slate-400">Total Amount:</span>
+              <span className="text-slate-600 dark:text-slate-400">
+                {paymentOption === 'partial' ? 'Down Payment (10%):' : 'Total Amount:'}
+              </span>
               <span className="text-2xl text-emerald-600 dark:text-emerald-400">
-                {property.price.toLocaleString()} RWF
+                {paymentOption === 'partial' 
+                  ? (property.price * 0.1).toLocaleString() 
+                  : property.price.toLocaleString()} RWF
               </span>
             </div>
+            {paymentOption === 'partial' && (
+              <div className="mb-2 text-sm text-slate-600 dark:text-slate-400">
+                Remaining Balance: <span className="font-semibold">{(property.price * 0.9).toLocaleString()} RWF</span>
+              </div>
+            )}
             <p className="text-sm text-slate-500 dark:text-slate-400">
               The property owner will contact you to finalize the {bookingType} details and payment.
             </p>

@@ -398,6 +398,20 @@ app.get('/make-server-d4068603/properties', async (c) => {
           console.log(`[GET /properties] Warning: Property missing id or title:`, p);
           return false;
         }
+
+        // Automatic expiration check
+        if (p.expiryDate && p.status === 'approved') {
+          const expiryDate = new Date(p.expiryDate);
+          const now = new Date();
+          if (now > expiryDate) {
+            console.log(`[GET /properties] Property ${p.id} has expired. Auto-expiring...`);
+            // Automatically expire the property
+            p.status = 'expired';
+            kv.set(`property:${p.id}`, p);
+            return false; // Don't show expired properties
+          }
+        }
+        
         return true;
       });
 

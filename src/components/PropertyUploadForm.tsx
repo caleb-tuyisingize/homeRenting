@@ -39,6 +39,17 @@ export function PropertyUploadForm({ isOpen, onClose, onSuccess }: PropertyUploa
     area: '',
     duration: '1month',
     imageUrls: [''],
+    // Owner verification fields
+    ownerPhone: '',
+    idNumber: '',
+    idType: 'national_id',
+    idImageUrl: '',
+    // Third party witness
+    hasThirdPartyWitness: false,
+    witnessName: '',
+    witnessPhone: '',
+    witnessRelationship: '',
+    witnessAddress: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,6 +68,22 @@ export function PropertyUploadForm({ isOpen, onClose, onSuccess }: PropertyUploa
         area: formData.area ? Number(formData.area) : undefined,
         duration: formData.duration,
         images: formData.imageUrls.filter(url => url.trim() !== ''),
+        // Owner verification
+        ownerVerification: {
+          phone: formData.ownerPhone,
+          idNumber: formData.idNumber,
+          idType: formData.idType,
+          idImageUrl: formData.idImageUrl,
+        },
+        // Third party witness (if provided)
+        ...(formData.hasThirdPartyWitness && {
+          thirdPartyWitness: {
+            name: formData.witnessName,
+            phone: formData.witnessPhone,
+            relationship: formData.witnessRelationship,
+            address: formData.witnessAddress,
+          }
+        }),
       };
 
       const response = await fetch(
@@ -109,6 +136,15 @@ export function PropertyUploadForm({ isOpen, onClose, onSuccess }: PropertyUploa
         area: '',
         duration: '1month',
         imageUrls: [''],
+        ownerPhone: '',
+        idNumber: '',
+        idType: 'national_id',
+        idImageUrl: '',
+        hasThirdPartyWitness: false,
+        witnessName: '',
+        witnessPhone: '',
+        witnessRelationship: '',
+        witnessAddress: '',
       });
       onSuccess();
       onClose();
@@ -169,7 +205,12 @@ export function PropertyUploadForm({ isOpen, onClose, onSuccess }: PropertyUploa
 
       if (response.ok) {
         const result = await response.json();
-        updateImageUrl(index, result.url);
+        if (index === -1) {
+          // ID image upload
+          setFormData({ ...formData, idImageUrl: result.url });
+        } else {
+          updateImageUrl(index, result.url);
+        }
         toast.success('Image uploaded successfully');
       } else {
         const error = await response.json();
@@ -306,6 +347,154 @@ export function PropertyUploadForm({ isOpen, onClose, onSuccess }: PropertyUploa
                 rows={4}
                 required
               />
+            </div>
+
+            {/* Owner Verification Section */}
+            <div className="md:col-span-2 border-t border-slate-200 dark:border-slate-700 pt-6 mt-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                Owner Verification
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Owner Phone */}
+                <div>
+                  <Label htmlFor="ownerPhone">Owner Phone Number *</Label>
+                  <Input
+                    id="ownerPhone"
+                    type="tel"
+                    value={formData.ownerPhone}
+                    onChange={(e) => setFormData({ ...formData, ownerPhone: e.target.value })}
+                    placeholder="+250 xxx xxx xxx"
+                    required
+                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Phone number must match your ID registration
+                  </p>
+                </div>
+
+                {/* ID Number */}
+                <div>
+                  <Label htmlFor="idNumber">National ID/Passport Number *</Label>
+                  <Input
+                    id="idNumber"
+                    value={formData.idNumber}
+                    onChange={(e) => setFormData({ ...formData, idNumber: e.target.value })}
+                    required
+                  />
+                </div>
+
+                {/* ID Type */}
+                <div>
+                  <Label htmlFor="idType">ID Type</Label>
+                  <Select value={formData.idType} onValueChange={(value) => setFormData({ ...formData, idType: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="national_id">National ID</SelectItem>
+                      <SelectItem value="passport">Passport</SelectItem>
+                      <SelectItem value="driving_license">Driving License</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* ID Image Upload */}
+                <div>
+                  <Label htmlFor="idImage">Upload ID Image</Label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="id-image-upload"
+                    onChange={(e) => handleFileUpload(e, -1)}
+                    className="hidden"
+                    disabled={uploadingImages}
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('id-image-upload')?.click()}
+                      disabled={uploadingImages}
+                      className="flex-1"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {uploadingImages ? 'Uploading...' : 'Upload ID'}
+                    </Button>
+                    {formData.idImageUrl && (
+                      <div className="w-20 h-20 rounded-lg overflow-hidden border">
+                        <img src={formData.idImageUrl} alt="ID Preview" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Upload a clear photo of your ID
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Third Party Witness Section */}
+            <div className="md:col-span-2 border-t border-slate-200 dark:border-slate-700 pt-6 mt-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <input
+                  type="checkbox"
+                  id="hasThirdPartyWitness"
+                  checked={formData.hasThirdPartyWitness}
+                  onChange={(e) => setFormData({ ...formData, hasThirdPartyWitness: e.target.checked })}
+                  className="w-4 h-4 text-emerald-600 rounded"
+                />
+                <Label htmlFor="hasThirdPartyWitness" className="cursor-pointer">
+                  Add Third Party Witness
+                </Label>
+              </div>
+              
+              {formData.hasThirdPartyWitness && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
+                  <div className="md:col-span-2">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                      A third party witness can verify your ownership and property details
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="witnessName">Witness Name</Label>
+                    <Input
+                      id="witnessName"
+                      value={formData.witnessName}
+                      onChange={(e) => setFormData({ ...formData, witnessName: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="witnessPhone">Witness Phone</Label>
+                    <Input
+                      id="witnessPhone"
+                      type="tel"
+                      value={formData.witnessPhone}
+                      onChange={(e) => setFormData({ ...formData, witnessPhone: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="witnessRelationship">Relationship</Label>
+                    <Input
+                      id="witnessRelationship"
+                      value={formData.witnessRelationship}
+                      onChange={(e) => setFormData({ ...formData, witnessRelationship: e.target.value })}
+                      placeholder="e.g., Neighbor, Agent, etc."
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="witnessAddress">Witness Address</Label>
+                    <Input
+                      id="witnessAddress"
+                      value={formData.witnessAddress}
+                      onChange={(e) => setFormData({ ...formData, witnessAddress: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Image URLs */}

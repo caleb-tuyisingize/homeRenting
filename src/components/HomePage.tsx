@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../utils/LanguageContext';
+import { useAuth } from '../utils/AuthContext';
 import { Hero } from './Hero';
 import { PropertyCard } from './PropertyCard';
 import { PropertyDetails } from './PropertyDetails';
 import { PropertyStatusIndicator } from './PropertyStatusIndicator';
 import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 import { ArrowRight } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
@@ -32,6 +34,7 @@ interface HomePageProps {
 
 export function HomePage({ searchQuery, onNavigate }: HomePageProps) {
   const { t } = useLanguage();
+  const { accessToken } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,24 +46,13 @@ export function HomePage({ searchQuery, onNavigate }: HomePageProps) {
   const fetchProperties = async () => {
     setLoading(true);
     try {
-      // First try to get properties from localStorage
-      const localProperties = JSON.parse(localStorage.getItem('properties') || '[]');
-      
-      if (localProperties.length > 0) {
-        console.log('[HomePage] Found properties in localStorage:', localProperties.length);
-        setProperties(localProperties);
-        setLoading(false);
-        return;
-      }
-
-      // If no local properties, try API
+      // Fetch from database API directly
       let url = `https://${projectId}.supabase.co/functions/v1/make-server-d4068603/properties`;
       if (searchQuery) {
-        url += `&location=${searchQuery}`;
+        url += `?location=${searchQuery}`;
       }
 
-      console.log('[HomePage] Fetching properties from:', url);
-      console.log('[HomePage] Access token available:', !!accessToken);
+      console.log('[HomePage] Fetching properties from database:', url);
       
       const headers: any = {};
       if (accessToken) {
@@ -73,17 +65,46 @@ export function HomePage({ searchQuery, onNavigate }: HomePageProps) {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('[HomePage] Received properties:', data.properties?.length || 0);
-        console.log('[HomePage] Raw response data:', data);
-        setProperties(data.properties || []);
+        console.log('[HomePage] Received properties from database:', data.properties?.length || 0);
+        
+        if (data.properties && data.properties.length > 0) {
+          // Store in localStorage as backup
+          localStorage.setItem('properties', JSON.stringify(data.properties));
+          setProperties(data.properties);
+        } else {
+          // Try localStorage as fallback
+          const localProperties = JSON.parse(localStorage.getItem('properties') || '[]');
+          if (localProperties.length > 0) {
+            console.log('[HomePage] Using localStorage fallback:', localProperties.length);
+            setProperties(localProperties);
+          } else {
+            setProperties([]);
+          }
+        }
       } else {
         const errorText = await response.text();
-        console.error('[HomePage] Failed to fetch properties:', response.status, errorText);
-        setProperties([]);
+        console.error('[HomePage] Failed to fetch from database:', response.status, errorText);
+        
+        // Fallback to localStorage
+        const localProperties = JSON.parse(localStorage.getItem('properties') || '[]');
+        if (localProperties.length > 0) {
+          console.log('[HomePage] Using localStorage fallback:', localProperties.length);
+          setProperties(localProperties);
+        } else {
+          setProperties([]);
+        }
       }
     } catch (error) {
       console.error('[HomePage] Exception while fetching properties:', error);
-      setProperties([]);
+      
+      // Fallback to localStorage
+      const localProperties = JSON.parse(localStorage.getItem('properties') || '[]');
+      if (localProperties.length > 0) {
+        console.log('[HomePage] Using localStorage fallback:', localProperties.length);
+        setProperties(localProperties);
+      } else {
+        setProperties([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -93,55 +114,93 @@ export function HomePage({ searchQuery, onNavigate }: HomePageProps) {
     fetchProperties();
   };
 
-  // Get latest 6 properties for the featured section
-  const latestProperties = [...properties]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 6);
+  // Filter properties by status
+  const activeProperties = properties.filter(p => p.status === 'approved');
+  const soldBookedProperties = properties.filter(p => p.status === 'sold' || p.status === 'booked');
+  
+  // Group active properties by price
+  const sortedActiveProperties = [...activeProperties].sort((a, b) => 
+    (b.price || 0) - (a.price || 0)
+  );
+  
+  // Define price thresholds
+  const highestPrice = sortedActiveProperties[0]?.price || 0;
+  const expensiveThreshold = highestPrice * 0.7; // Top 30% most expensive
+  
+  const expensiveProperties = sortedActiveProperties.filter(p => p.price >= expensiveThreshold).slice(0, 6);
+  const mediumProperties = sortedActiveProperties.filter(p => p.price < expensiveThreshold).slice(0, 6);
+  const recentSoldBooked = soldBookedProperties.slice(0, 6);
 
   return (
     <div className="bg-slate-50 dark:bg-slate-900">
       {/* Hero Section */}
       <Hero onSearch={handleSearch} />
 
-      {/* Latest/Featured Properties */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="mb-8">
-          <h2 className="text-slate-900 dark:text-white mb-2">
-            {searchQuery ? `Properties in ${searchQuery}` : 'Latest Properties'}
-          </h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-4">
-            {searchQuery ? `Browse available properties in ${searchQuery}` : 'Discover the newest properties across Rwanda'}
-          </p>
-          {!loading && <PropertyStatusIndicator />}
-        </div>
-
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="animate-pulse">
-                <div className="bg-slate-200 dark:bg-slate-800 h-48 rounded-t-xl"></div>
-                <div className="bg-white dark:bg-slate-800 p-5 rounded-b-xl">
-                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded mb-2"></div>
-                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3"></div>
-                </div>
+        {!loading && <PropertyStatusIndicator />}
+        
+        {/* Most Expensive Properties */}
+        {expensiveProperties.length > 0 && (
+          <div className="mb-16">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                  Premium Properties
+                </h2>
+                <p className="text-slate-600 dark:text-slate-400">
+                  High-end properties for luxury living
+                </p>
               </div>
-            ))}
-          </div>
-        ) : latestProperties.length === 0 ? (
-          <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-xl">
-            <p className="text-slate-500 dark:text-slate-400 mb-4">
-              {searchQuery ? `No properties found in ${searchQuery}` : 'No properties available at the moment'}
-            </p>
-            {!searchQuery && (
-              <p className="text-sm text-slate-400 dark:text-slate-500">
-                New properties are added regularly by owners. Check back soon!
-              </p>
+              <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100">
+                Most Expensive
+              </Badge>
+            </div>
+            
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="bg-slate-200 dark:bg-slate-800 h-48 rounded-t-xl"></div>
+                    <div className="bg-white dark:bg-slate-800 p-5 rounded-b-xl">
+                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded mb-2"></div>
+                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {expensiveProperties.map((property) => (
+                  <PropertyCard
+                    key={property.id}
+                    property={property}
+                    onViewDetails={setSelectedProperty}
+                  />
+                ))}
+              </div>
             )}
           </div>
-        ) : (
-          <>
+        )}
+
+        {/* Medium Price Properties */}
+        {mediumProperties.length > 0 && (
+          <div className="mb-16">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                  Affordable Properties
+                </h2>
+                <p className="text-slate-600 dark:text-slate-400">
+                  Great deals for comfortable living
+                </p>
+              </div>
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                Best Value
+              </Badge>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {latestProperties.map((property) => (
+              {mediumProperties.map((property) => (
                 <PropertyCard
                   key={property.id}
                   property={property}
@@ -149,22 +208,48 @@ export function HomePage({ searchQuery, onNavigate }: HomePageProps) {
                 />
               ))}
             </div>
-            {properties.length > 6 && !searchQuery && (
-              <div className="text-center mt-8">
-                <p className="text-slate-600 dark:text-slate-400 mb-4">
-                  Showing {latestProperties.length} of {properties.length} available properties
+          </div>
+        )}
+
+        {/* Booked/Sold Properties */}
+        {recentSoldBooked.length > 0 && (
+          <div className="mb-16">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                  Recently Booked & Sold
+                </h2>
+                <p className="text-slate-600 dark:text-slate-400">
+                  These properties have been secured
                 </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => onNavigate && onNavigate('properties')}
-                  className="group"
-                >
-                  View all {properties.length} properties
-                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
               </div>
-            )}
-          </>
+              <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100">
+                Booked/Sold
+              </Badge>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recentSoldBooked.map((property) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  onViewDetails={setSelectedProperty}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* No Properties Message */}
+        {!loading && properties.length === 0 && (
+          <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-xl">
+            <p className="text-slate-500 dark:text-slate-400 mb-4">
+              No properties available at the moment
+            </p>
+            <p className="text-sm text-slate-400 dark:text-slate-500">
+              New properties are added regularly by owners. Check back soon!
+            </p>
+          </div>
         )}
       </div>
 
